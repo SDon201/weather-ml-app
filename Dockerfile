@@ -4,7 +4,7 @@ FROM python:3.9-slim
 WORKDIR /app
 
 # Install dependencies
-Copy requirements.txt
+Copy requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt flask
 
 # Copy the rest of the application code
