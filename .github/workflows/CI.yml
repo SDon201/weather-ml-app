@@ -91,7 +91,7 @@ jobs:
           max_attempts=5
           attempt=1
           while [ $attempt -le $max_attempts ]; do
-            if docker exec test-container curl -f http://localhost:5000/ > /dev/null 2>&1; then
+            if curl -f http://localhost:5000/ > /dev/null 2>&1; then
               echo "Flask app is responding"
               break
             fi
