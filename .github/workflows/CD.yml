@@ -49,7 +49,7 @@ jobs:
           echo "Waiting for rollout to complete..."
       - name: Ensure Deployment Exists
         run: |
-          ansible-playbook -i k8s/deployment.yaml
+          ansible-playbook k8s/deployment.yaml
       - name: Wait for Rollout to Complete
         timeout-minutes: 5
         run: |
