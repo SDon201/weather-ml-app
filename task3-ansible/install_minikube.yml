@@ -1,0 +1,24 @@
+---
+- name: Install and start Minikube
+  hosts: local
+
+  tasks:
+    - name: Download Minikube (as root)
+      become: yes
+      get_url:
+        url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        dest: /usr/local/bin/minikube
+        mode: '0755'
+
+    - name: Ensure current user is in docker group (as root)
+      become: yes
+      user:
+        name: "{{ ansible_user_id }}"
+        groups: docker
+        append: yes
+
+    - name: Start Minikube as normal user (no sudo)
+      command: minikube start --driver=docker
+
+    - name: Check Minikube status
+      command: minikube status
