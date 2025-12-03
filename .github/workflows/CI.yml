@@ -36,17 +36,17 @@ jobs:
       # (c) Run test files in separate steps with proper error handling
       - name: Run Smoke Tests
         id: smoke_test
-        run: python -m unittest tests.smoke_test.py -v
+        run: python -m unittest tests.smoke_test -v
         continue-on-error: false
 
       - name: Run Unit Tests
         id: unit_test
-        run: python -m unittest tests.unit_test.py -v
+        run: python -m unittest tests.unit_test -v
         continue-on-error: false
 
       - name: Run Integration Tests
         id: integration_test
-        run: python -m unittest tests.integration_test.py -v
+        run: python -m unittest tests.integration_test -v
         continue-on-error: false
 
       # (d) Build Docker Image with BuildKit for caching
