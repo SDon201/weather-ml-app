@@ -13,7 +13,7 @@ class TestUnit(unittest.TestCase):
 			'temperature': '270.277',
 			'pressure': '1006',
 			'humidity': '84',
-			'wind_speed': '3.6',
+			# 'wind_speed' is missing
 			'wind_deg': '274',
 			'rain_1h': '0',
 			'rain_3h': '0',
