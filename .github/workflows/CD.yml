@@ -1,0 +1,100 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+    branches: [ main ]
+
+env:
+  IMAGE_NAME: weather-ml-app
+  NAMESPACE: default
+  DEPLOYMENT_NAME: weather-ml-app
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Verify Kubernetes Connection
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+          echo " Kubernetes cluster is accessible"
+
+      - name: Check Current Deployment Status
+        run: |
+          echo "Current deployment status:"
+          kubectl get deployment ${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} || echo "Deployment not found, will be created"
+          kubectl get pods -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }} || true
+
+      # (g) Deploy to Kubernetes with Rolling Update strategy
+      - name: Deploy to Kubernetes
+        id: deploy
+        run: |
+          DOCKER_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:v1"
+          echo "Deploying image: $DOCKER_IMAGE"
+          
+          # Update deployment with new image
+          kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} \
+            ${{ env.IMAGE_NAME }}=$DOCKER_IMAGE \
+            -n ${{ env.NAMESPACE }} \
+            --record || echo "Deployment update initiated"
+          
+          echo "Waiting for rollout to complete..."
+
+      - name: Wait for Rollout to Complete
+        timeout-minutes: 5
+        run: |
+          kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} \
+            -n ${{ env.NAMESPACE }} \
+            --timeout=5m || exit 1
+
+      - name: Verify Deployment Health
+        run: |
+          echo "Checking deployment replicas..."
+          kubectl get deployment ${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }}
+          
+          echo "Checking pod status..."
+          kubectl get pods -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }}
+          
+          echo "Checking service endpoints..."
+          kubectl get service ${{ env.IMAGE_NAME }} -n ${{ env.NAMESPACE }} || echo "Service not found"
+
+      - name: Verify Service Connectivity
+        run: |
+          SERVICE_IP=$(kubectl get service ${{ env.IMAGE_NAME }} -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.clusterIP}' 2>/dev/null || echo "")
+          
+          if [ -z "$SERVICE_IP" ]; then
+            echo " Service not found, checking if pod is accessible..."
+            POD_NAME=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }} -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+            if [ -n "$POD_NAME" ]; then
+              echo "Testing pod connectivity..."
+              kubectl exec -n ${{ env.NAMESPACE }} $POD_NAME -- curl -f http://localhost:5000/ || true
+            fi
+          else
+            echo "Service IP: $SERVICE_IP"
+          fi
+
+      - name: Rollback on Failure
+        if: failure()
+        run: |
+          echo " Deployment failed, initiating rollback..."
+          kubectl rollout undo deployment/${{ env.DEPLOYMENT_NAME }} \
+            -n ${{ env.NAMESPACE }} \
+            || echo "Rollback attempted"
+          kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} \
+            -n ${{ env.NAMESPACE }} \
+            --timeout=5m || true
+
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo " Deployment successful!"
+          echo " Deployment Details:"
+          kubectl describe deployment ${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} | tail -20
