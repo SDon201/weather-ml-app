@@ -47,7 +47,9 @@ jobs:
             --record || echo "Deployment update initiated"
           
           echo "Waiting for rollout to complete..."
-
+      - name: Ensure Deployment Exists
+        run: |
+          kubectl apply -f .k8s/deployment.yaml -n ${{ env.NAMESPACE }}
       - name: Wait for Rollout to Complete
         timeout-minutes: 5
         run: |
