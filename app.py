@@ -41,15 +41,22 @@ def home():
 				rain_3h, snow, clouds
 			]).reshape(1, -1)
 
-			
 			prediction, latency = classify_weather(features)
 
-
 			return render_template('result.html', prediction=prediction, latency=latency)
+
+		except KeyError:
+			error_msg = "Error: Missing input field"
+			return render_template('form.html', error=error_msg)
+
+		except ValueError as e:
+			error_msg = f"Error processing input: {e}"
+			return render_template('form.html', error=error_msg)
 
 		except Exception as e:
 			error_msg = f"Error processing input: {e}"
 			return render_template('form.html', error=error_msg)
+
 	# GET method: show the input form
 	return render_template('form.html')
 
