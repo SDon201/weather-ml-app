@@ -13,6 +13,9 @@ def load_model(model_path = 'model/model.pkl'):
 def classify_weather(features):
 	model = load_model()
 	start = time.time()
+
+    print("DEBUG features 1:", features, "dtype:", features.dtype, flush=True)
+	
 	prediction_index = model.predict(features)[0]
 	latency = round((time.time() - start) * 1000, 2) #we are here
 	prediction = weather_classes[prediction_index]
@@ -40,6 +43,8 @@ def home():
 				wind_speed, wind_deg, rain_1h,
 				rain_3h, snow, clouds
 			]).reshape(1, -1)
+
+			print("DEBUG built features 2:", features, "dtype:", features.dtype, flush=True)
 
 			prediction, latency = classify_weather(features)
 
