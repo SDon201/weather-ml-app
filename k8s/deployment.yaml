@@ -24,7 +24,7 @@
               spec:
                 containers:
                 - name: weather-ml
-                  image: sdon201/weather-ml-app:v2
+                  image: sdon201/weather-ml-app:v1
                   ports:
                   - containerPort: 5000
 
