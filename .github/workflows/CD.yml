@@ -35,8 +35,10 @@ jobs:
       - name: Install Kubernetes Python library
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pip
-          python3 -m pip install --user kubernetes
+          sudo apt-get install -y python3-venv python3-pip
+          python3 -m venv venv
+          source venv/bin/activate
+          python -m pip install kubernetes
           
       - name: Ensure Deployment Exists
         run: |
