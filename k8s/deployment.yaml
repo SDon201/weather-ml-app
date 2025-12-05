@@ -105,18 +105,20 @@
       ansible.builtin.command: minikube start --driver=docker
       when: "'Running' not in minikube_status.stdout"
 
-  tasks:
+   tasks:
     #################################################################
     # Kubernetes Deployment + Service
     #################################################################
     - name: Apply weather-ml-app Deployment
       kubernetes.core.k8s:
         state: present
+        namespace: "{{ k8s_namespace }}"
         definition:
           apiVersion: apps/v1
           kind: Deployment
           metadata:
             name: weather-ml-app
+            namespace: "{{ k8s_namespace }}"
             labels:
               app: weather-ml-app
           spec:
@@ -139,11 +141,13 @@
     - name: Ensure weather-ml-service Service exists
       kubernetes.core.k8s:
         state: present
+        namespace: "{{ k8s_namespace }}"
         definition:
           apiVersion: v1
           kind: Service
           metadata:
             name: weather-ml-service
+            namespace: "{{ k8s_namespace }}"
             labels:
               app: weather-ml-app
           spec:
