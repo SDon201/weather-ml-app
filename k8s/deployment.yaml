@@ -11,17 +11,16 @@
     weather_ml_replicas: 2
     minikube_deb_url: "https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb"
     minikube_deb_path: "/tmp/minikube_latest_amd64.deb"
-    k8s_namespace: "default" 
-
+    k8s_namespace: "default"
 
   pre_tasks:
     #################################################################
-    # Base packages
+    # Base packages (idempotent)
     #################################################################
     - name: Ensure base packages are present
       become: true
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         state: present
         name:
           - apt-transport-https
@@ -65,10 +64,12 @@
 
     - name: Download kubectl binary if missing
       become: true
-      ansible.builtin.get_url:
-        url: "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-        dest: /usr/local/bin/kubectl
-        mode: "0755"
+      ansible.builtin.shell: |
+        set -e
+        curl -L -s https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
+        chmod 0755 /usr/local/bin/kubectl
+      args:
+        executable: /bin/bash
       when: kubectl_check.rc != 0
 
     #################################################################
@@ -94,7 +95,7 @@
       when: not minikube_stat.stat.exists
 
     #################################################################
-    # Ensure Minikube cluster is running 
+    # Ensure Minikube cluster is running
     #################################################################
     - name: Check Minikube status (host)
       ansible.builtin.command: minikube status
@@ -107,7 +108,7 @@
       ansible.builtin.command: minikube start --driver=docker
       when: "'Running' not in minikube_status.stdout"
 
-   tasks:
+  tasks:
     #################################################################
     # Kubernetes Deployment + Service
     #################################################################
