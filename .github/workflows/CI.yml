@@ -138,6 +138,6 @@ jobs:
 
       - name: Log Build Summary
         run: |
-          echo " CI Pipeline completed successfully"
-          echo " Image pushed: ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:v1"
-          echo " GitHub SHA: ${{ github.sha }}"
+          echo "CI Pipeline completed successfully"
+          echo "Image pushed: ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:v1"
+          echo "GitHub SHA: ${{ github.sha }}
