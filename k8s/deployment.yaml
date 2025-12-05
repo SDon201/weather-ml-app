@@ -19,7 +19,7 @@
                 app: weather-ml
             template:
               metadata:
-                labels:
+                labels: weather-ml
                   app: weather-ml
               spec:
                 containers:
