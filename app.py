@@ -49,7 +49,7 @@ def home():
 
 			return render_template('result.html', prediction=prediction, latency=latency)
 
-		except KeyError:
+		except KeyError as e:
 			print("KeyError in / route:", repr(e), flush=True)
 			error_msg = "Error: Missing input field"
 			return render_template('form.html', error=error_msg)
