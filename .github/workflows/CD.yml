@@ -49,7 +49,7 @@ jobs:
       - name: Deploy to Kubernetes
         id: deploy
         run: |
-          DOCKER_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:v2"
+          DOCKER_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:v1"
           echo "Deploying image: $DOCKER_IMAGE"
           kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} \
             ${{ env.IMAGE_NAME }}=$DOCKER_IMAGE \
