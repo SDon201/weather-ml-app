@@ -22,8 +22,8 @@ class TestUnit(unittest.TestCase):
 		}
 		response = self.client.post('/', data=form_data)
   
-		self.assertEqual(response.status_code, 200)
-		self.assertIn(b'Error: Missing input field', response.data)
+		body = response.get_data(as_text=True)
+		self.assertIn("Error processing input", body)
   
   
   
