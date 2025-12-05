@@ -53,7 +53,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker Image
+      - name: Build Docker Image (local)
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -121,7 +121,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-           - name: Build and Push to DockerHub
+      - name: Build and Push to DockerHub
         uses: docker/build-push-action@v5
         with:
           context: .
