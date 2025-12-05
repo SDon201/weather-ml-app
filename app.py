@@ -13,7 +13,7 @@ def load_model(model_path = 'model/model.pkl'):
 def classify_weather(features):
 	model = load_model()
 	start = time.time()
-	 prediction = weather_classes[int(prediction_index)]
+	prediction = weather_classes[int(prediction_index)]
 	latency = round((time.time() - start) * 1000, 2) #we are here
 	prediction = weather_classes[1]
 	
