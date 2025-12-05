@@ -92,10 +92,10 @@
       when: not minikube_stat.stat.exists
 
     #################################################################
-    # Ensure Minikube cluster is running
+    # Ensure Minikube cluster is running  ✅ FIXED HERE
     #################################################################
     - name: Check Minikube status (host)
-      ansible.builtin.command: minikube status --format='{{.Host}}'
+      ansible.builtin.command: minikube status
       register: minikube_status
       failed_when: false
       changed_when: false
@@ -103,7 +103,7 @@
     - name: Start Minikube if not running
       become: true
       ansible.builtin.command: minikube start --driver=docker
-      when: minikube_status.stdout != "Running"
+      when: "'Running' not in minikube_status.stdout"
 
   tasks:
     #################################################################
