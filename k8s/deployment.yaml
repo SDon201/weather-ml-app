@@ -1,33 +1,22 @@
----
-- name: Deploy weather-ml app to Kubernetes
-  hosts: local
-
-  tasks:
-
-    - name: Write deployment manifest
-      copy:
-        dest: /tmp/deployment.yml
-        content: |
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: weather-ml
-          spec:
-            replicas: 2
-            selector:
-              matchLabels:
-                app: weather-ml
-            template:
-              metadata:
-                labels: weather-ml
-                  app: weather-ml
-              spec:
-                containers:
-                - name: weather-ml
-                  image: sdon201/weather-ml-app:v1
-                  imagePullPolicy: Always
-                  ports:
-                  - containerPort: 5000
-
-    - name: Apply deployment
-      command: kubectl apply -f /tmp/deployment.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-ml-app
+  labels:
+    app: weather-ml-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: weather-ml-app
+  template:
+    metadata:
+      labels:
+        app: weather-ml-app
+    spec:
+      containers:
+      - name: weather-ml-app
+        image: sdon201/weather-ml-app:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
