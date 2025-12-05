@@ -25,11 +25,11 @@ def home():
 	if request.method == 'POST':
 		try:
 			# Extract floats from form data
-			temperature = request.form['temperature']
-			pressure = request.form['pressure']
-			humidity = request.form['humidity']
-			wind_speed = request.form['wind_speed']
-			wind_deg = request.form['wind_deg']
+			temperature = float(request.form['temperature'])
+			pressure = float(request.form['pressure'])
+			humidity = float(request.form['humidity'])
+			wind_speed = float(request.form['wind_speed'])
+			wind_deg = float(request.form['wind_deg'])
 			rain_1h = float(request.form.get('rain_1h', 0) or 0)
 			rain_3h = float(request.form.get('rain_3h', 0) or 0)
 			snow = float(request.form.get('snow', 0) or 0)
