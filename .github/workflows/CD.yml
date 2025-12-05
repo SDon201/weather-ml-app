@@ -11,6 +11,7 @@ env:
   IMAGE_NAME: weather-ml-app
   NAMESPACE: default
   DEPLOYMENT_NAME: weather-ml-app
+  SERVICE_NAME: weather-ml-service   # <--- added: actual service name in the cluster
 
 jobs:
   deploy:
@@ -23,6 +24,7 @@ jobs:
 
       - name: Verify Kubernetes Connection
         run: |
+          kubectl config current-context || true
           kubectl cluster-info
           kubectl get nodes
           echo " Kubernetes cluster is accessible"
@@ -40,10 +42,10 @@ jobs:
           python3 -m pip install --break-system-packages ansible kubernetes
           ansible-galaxy collection install kubernetes.core
 
-          
       - name: Ensure Deployment Exists
         run: |
-          ansible-playbook k8s/deployment.yaml
+          ANSIBLE_HOST_KEY_CHECKING=False \
+          ansible-playbook -i localhost, -c local k8s/deployment.yaml
 
       - name: Deploy to Kubernetes
         id: deploy
@@ -71,11 +73,11 @@ jobs:
           kubectl get pods -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }}
           
           echo "Checking service endpoints..."
-          kubectl get service ${{ env.IMAGE_NAME }} -n ${{ env.NAMESPACE }} || echo "Service not found"
+          kubectl get service ${{ env.SERVICE_NAME }} -n ${{ env.NAMESPACE }} || echo "Service not found"
 
       - name: Verify Service Connectivity
         run: |
-          SERVICE_IP=$(kubectl get service ${{ env.IMAGE_NAME }} -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.clusterIP}' 2>/dev/null || echo "")
+          SERVICE_IP=$(kubectl get service ${{ env.SERVICE_NAME }} -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.clusterIP}' 2>/dev/null || echo "")
           
           if [ -z "$SERVICE_IP" ]; then
             echo " Service not found, checking if pod is accessible..."
