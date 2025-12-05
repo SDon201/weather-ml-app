@@ -116,7 +116,7 @@
       changed_when: false
 
     - name: Start Minikube if not running
-      become: true
+      become: false
       ansible.builtin.command: minikube start --driver=docker
       when: "'Running' not in minikube_status.stdout"
 
