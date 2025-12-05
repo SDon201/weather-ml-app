@@ -34,6 +34,8 @@ jobs:
           kubectl get pods -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }} || true
       - name: Install Kubernetes Python library
         run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
           python3 -m pip install --user kubernetes
           
       - name: Ensure Deployment Exists
