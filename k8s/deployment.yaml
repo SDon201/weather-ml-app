@@ -11,10 +11,12 @@
     weather_ml_replicas: 2
     minikube_deb_url: "https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb"
     minikube_deb_path: "/tmp/minikube_latest_amd64.deb"
+    k8s_namespace: "default" 
+
 
   pre_tasks:
     #################################################################
-    # Base packages (idempotent: re-running is safe)
+    # Base packages
     #################################################################
     - name: Ensure base packages are present
       become: true
@@ -92,7 +94,7 @@
       when: not minikube_stat.stat.exists
 
     #################################################################
-    # Ensure Minikube cluster is running  ✅ FIXED HERE
+    # Ensure Minikube cluster is running 
     #################################################################
     - name: Check Minikube status (host)
       ansible.builtin.command: minikube status
