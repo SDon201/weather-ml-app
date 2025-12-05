@@ -11,7 +11,7 @@ env:
   IMAGE_NAME: weather-ml-app
   NAMESPACE: default
   DEPLOYMENT_NAME: weather-ml-app
-  SERVICE_NAME: weather-ml-service   # <--- added: actual service name in the cluster
+  SERVICE_NAME: weather-ml-service   # added earlier
 
 jobs:
   deploy:
@@ -24,7 +24,6 @@ jobs:
 
       - name: Verify Kubernetes Connection
         run: |
-          kubectl config current-context || true
           kubectl cluster-info
           kubectl get nodes
           echo " Kubernetes cluster is accessible"
@@ -56,7 +55,13 @@ jobs:
             ${{ env.IMAGE_NAME }}=$DOCKER_IMAGE \
             -n ${{ env.NAMESPACE }} \
             --record || echo "Deployment update initiated"
-            
+
+      # 👇 NEW STEP: force the server to update pods even if tag stays :v1
+      - name: Force rollout restart
+        run: |
+          echo "Forcing rollout restart of deployment/${{ env.DEPLOYMENT_NAME }}..."
+          kubectl rollout restart deployment/${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }}
+
       - name: Wait for Rollout to Complete
         timeout-minutes: 5
         run: |
