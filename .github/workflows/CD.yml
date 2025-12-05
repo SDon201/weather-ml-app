@@ -32,13 +32,13 @@ jobs:
           echo "Current deployment status:"
           kubectl get deployment ${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} || echo "Deployment not found, will be created"
           kubectl get pods -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }} || true
-      - name: Install Kubernetes Python library
+          
+      - name: Install Ansible dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-venv python3-pip
-          python3 -m venv venv
-          source venv/bin/activate
-          python -m pip install kubernetes
+          sudo apt-get install -y python3-pip
+          python3 -m pip install ansible kubernetes
+          ansible-galaxy collection install kubernetes.core
           
       - name: Ensure Deployment Exists
         run: |
