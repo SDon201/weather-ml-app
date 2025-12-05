@@ -25,6 +25,7 @@
                 containers:
                 - name: weather-ml
                   image: sdon201/weather-ml-app:v1
+                  imagePullPolicy: Always
                   ports:
                   - containerPort: 5000
 
