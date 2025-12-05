@@ -30,15 +30,13 @@ class TestModelAppIntegration(unittest.TestCase):
 		# Ensure that the result page (response.data) should include a weather prediction
 		html_text = response.data.decode('utf-8').lower()
 		self.assertIn('prediction', html_text)
-		self.assertIn('ms', html_text)
+		
 	
 		# Ensure that the result page should include a prediction time
-		
-
-		html_text = response.data.decode('utf-8').lower()
+		self.assertIn('ms', html_text)
 		valid_classes = [
 			'clear', 'cloudy', 'drizzly', 'foggy', 'hazey',
-			'misty', 'rain', 'smokey', 'thunderstorm'
+			'misty', 'rainy', 'smokey', 'thunderstorm'
 		]
 		found = any(weather in html_text for weather in valid_classes)
 		
