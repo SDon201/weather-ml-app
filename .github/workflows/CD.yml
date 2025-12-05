@@ -8,9 +8,9 @@ on:
     branches: [ main ]
 
 env:
-  IMAGE_NAME: weather-ml-app
+  IMAGE_NAME: weather-ml
   NAMESPACE: default
-  DEPLOYMENT_NAME: weather-ml-app
+  DEPLOYMENT_NAME: weather-ml
 
 jobs:
   deploy:
