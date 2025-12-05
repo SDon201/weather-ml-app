@@ -13,8 +13,6 @@ def load_model(model_path = 'model/model.pkl'):
 def classify_weather(features):
 	model = load_model()
 	start = time.time()
-	features = np.asarray(features, dtype=float)
-	print("DEBUG features:", features, "dtype:", features.dtype, flush=True)
 	prediction_index = model.predict(features)[0]
 	latency = round((time.time() - start) * 1000, 2) #we are here
 	prediction = weather_classes[prediction_index]
@@ -49,18 +47,15 @@ def home():
 
 			return render_template('result.html', prediction=prediction, latency=latency)
 
-		except KeyError as e:
-			print("KeyError in / route:", repr(e), flush=True)
+		except KeyError:
 			error_msg = "Error: Missing input field"
 			return render_template('form.html', error=error_msg)
 
 		except ValueError as e:
-			print("ValueError in / route:", repr(e), flush=True)
 			error_msg = f"Error processing input: {e}"
 			return render_template('form.html', error=error_msg)
 
 		except Exception as e:
-			print("Unexpected exception in / route:", repr(e), flush=True)
 			error_msg = f"Error processing input: {e}"
 			return render_template('form.html', error=error_msg)
 
