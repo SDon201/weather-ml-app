@@ -121,7 +121,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Push to DockerHub
+           - name: Build and Push to DockerHub
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -140,4 +140,4 @@ jobs:
         run: |
           echo "CI Pipeline completed successfully"
           echo "Image pushed: ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:v1"
-          echo "GitHub SHA: ${{ github.sha }}
+          echo "GitHub SHA: ${{ github.sha }}"
