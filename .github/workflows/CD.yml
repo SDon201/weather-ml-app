@@ -33,23 +33,19 @@ jobs:
           kubectl get deployment ${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} || echo "Deployment not found, will be created"
           kubectl get pods -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }} || true
 
-      # (g) Deploy to Kubernetes with Rolling Update strategy
+      - name: Ensure Deployment Exists
+        run: |
+          ansible-playbook k8s/deployment.yaml
+
       - name: Deploy to Kubernetes
         id: deploy
         run: |
           DOCKER_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:v1"
           echo "Deploying image: $DOCKER_IMAGE"
-          
-          # Update deployment with new image
           kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} \
             ${{ env.IMAGE_NAME }}=$DOCKER_IMAGE \
             -n ${{ env.NAMESPACE }} \
             --record || echo "Deployment update initiated"
-          
-          echo "Waiting for rollout to complete..."
-      - name: Ensure Deployment Exists
-        run: |
-          ansible-playbook k8s/deployment.yaml
       - name: Wait for Rollout to Complete
         timeout-minutes: 5
         run: |
