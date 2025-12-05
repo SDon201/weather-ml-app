@@ -1,7 +1,7 @@
 ---
-- name: Deploy weather-ml-app to Kubernetes
+- name: Install prerequisites and deploy weather-ml-app to Kubernetes
   hosts: localhost
-  gather_facts: false
+  gather_facts: true
 
   collections:
     - kubernetes.core
@@ -9,8 +9,102 @@
   vars:
     weather_ml_image: "sdon201/weather-ml-app:v1"
     weather_ml_replicas: 2
+    minikube_deb_url: "https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb"
+    minikube_deb_path: "/tmp/minikube_latest_amd64.deb"
+
+  pre_tasks:
+    #################################################################
+    # System packages / tools (idempotent)
+    #################################################################
+    - name: Install base packages
+      become: true
+      ansible.builtin.apt:
+        update_cache: yes
+        state: present
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - software-properties-common
+
+    - name: Install Docker
+      become: true
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+
+    - name: Ensure Docker service is running
+      become: true
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    #################################################################
+    # kubectl
+    #################################################################
+    - name: Add Kubernetes APT repo key
+      become: true
+      ansible.builtin.apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Add Kubernetes APT repository
+      become: true
+      ansible.builtin.apt_repository:
+        repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
+        state: present
+        filename: kubernetes
+
+    - name: Install kubectl
+      become: true
+      ansible.builtin.apt:
+        name: kubectl
+        state: present
+        update_cache: yes
+
+    #################################################################
+    # Minikube install (if not already present)
+    #################################################################
+    - name: Check if minikube is already installed
+      ansible.builtin.stat:
+        path: /usr/bin/minikube
+      register: minikube_stat
+
+    - name: Download Minikube .deb
+      become: true
+      ansible.builtin.get_url:
+        url: "{{ minikube_deb_url }}"
+        dest: "{{ minikube_deb_path }}"
+        mode: "0644"
+      when: not minikube_stat.stat.exists
+
+    - name: Install Minikube
+      become: true
+      ansible.builtin.apt:
+        deb: "{{ minikube_deb_path }}"
+      when: not minikube_stat.stat.exists
+
+    #################################################################
+    # Ensure Minikube cluster is running
+    #################################################################
+    - name: Check Minikube status
+      ansible.builtin.command: minikube status --format='{{.Host}}'
+      register: minikube_status
+      failed_when: false
+      changed_when: false
+
+    - name: Start Minikube if not running
+      become: true
+      ansible.builtin.command: minikube start --driver=docker
+      when: minikube_status.stdout != "Running"
 
   tasks:
+    #################################################################
+    # Kubernetes objects: Deployment + Service
+    #################################################################
     - name: Apply weather-ml-app Deployment
       kubernetes.core.k8s:
         state: present
@@ -19,7 +113,6 @@
           kind: Deployment
           metadata:
             name: weather-ml-app
-            namespace: default
             labels:
               app: weather-ml-app
           spec:
@@ -38,3 +131,23 @@
                     imagePullPolicy: Always
                     ports:
                       - containerPort: 5000
+
+    - name: Ensure weather-ml-service Service exists
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: weather-ml-service
+            labels:
+              app: weather-ml-app
+          spec:
+            type: NodePort
+            selector:
+              app: weather-ml-app
+            ports:
+              - protocol: TCP
+                port: 5000
+                targetPort: 5000
+                nodePort: 30001
