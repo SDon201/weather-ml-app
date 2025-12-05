@@ -32,7 +32,10 @@ jobs:
           echo "Current deployment status:"
           kubectl get deployment ${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} || echo "Deployment not found, will be created"
           kubectl get pods -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }} || true
-
+      - name: Install Kubernetes Python library
+        run: |
+          python3 -m pip install --user kubernetes
+          
       - name: Ensure Deployment Exists
         run: |
           ansible-playbook k8s/deployment.yaml
@@ -46,6 +49,7 @@ jobs:
             ${{ env.IMAGE_NAME }}=$DOCKER_IMAGE \
             -n ${{ env.NAMESPACE }} \
             --record || echo "Deployment update initiated"
+            
       - name: Wait for Rollout to Complete
         timeout-minutes: 5
         run: |
