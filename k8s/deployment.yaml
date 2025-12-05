@@ -19,6 +19,7 @@
           kind: Deployment
           metadata:
             name: weather-ml-app
+            namespace: default
             labels:
               app: weather-ml-app
           spec:
