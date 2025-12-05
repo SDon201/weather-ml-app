@@ -8,10 +8,11 @@ on:
     branches: [ main ]
 
 env:
+  REGISTRY: docker.io
   IMAGE_NAME: weather-ml-app
   NAMESPACE: default
   DEPLOYMENT_NAME: weather-ml-app
-  SERVICE_NAME: weather-ml-service   # added earlier
+  SERVICE_NAME: weather-ml-service
 
 jobs:
   deploy:
@@ -26,7 +27,7 @@ jobs:
         run: |
           kubectl cluster-info
           kubectl get nodes
-          echo " Kubernetes cluster is accessible"
+          echo "Kubernetes cluster is accessible"
 
       - name: Check Current Deployment Status
         run: |
@@ -46,17 +47,45 @@ jobs:
           ANSIBLE_HOST_KEY_CHECKING=False \
           ansible-playbook -i localhost, -c local k8s/deployment.yaml
 
+      # 🔐 Login so docker manifest inspect works for private repos
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 🔍 NEW: detect which tag is available (v2 preferred, fallback to v1)
+      - name: Determine image tag (v2 preferred, fallback to v1)
+        id: determine_tag
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}"
+          echo "Checking for available image tags for $IMAGE..."
+
+          if docker manifest inspect "${IMAGE}:v2" > /dev/null 2>&1; then
+            TAG="v2"
+            echo "Found tag v2"
+          elif docker manifest inspect "${IMAGE}:v1" > /dev/null 2>&1; then
+            TAG="v1"
+            echo "Found tag v1"
+          else
+            echo "ERROR: Neither v1 nor v2 exists in the registry for $IMAGE"
+            exit 1
+          fi
+
+          echo "Using tag: $TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
       - name: Deploy to Kubernetes
         id: deploy
         run: |
-          DOCKER_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:v2"
+          DOCKER_IMAGE="${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.determine_tag.outputs.tag }}"
           echo "Deploying image: $DOCKER_IMAGE"
           kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} \
             ${{ env.IMAGE_NAME }}=$DOCKER_IMAGE \
             -n ${{ env.NAMESPACE }} \
             --record || echo "Deployment update initiated"
 
-      # 👇 NEW STEP: force the server to update pods even if tag stays :v2
+      # Force the server to update pods even if tag stays the same
       - name: Force rollout restart
         run: |
           echo "Forcing rollout restart of deployment/${{ env.DEPLOYMENT_NAME }}..."
@@ -85,7 +114,7 @@ jobs:
           SERVICE_IP=$(kubectl get service ${{ env.SERVICE_NAME }} -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.clusterIP}' 2>/dev/null || echo "")
           
           if [ -z "$SERVICE_IP" ]; then
-            echo " Service not found, checking if pod is accessible..."
+            echo "Service not found, checking if pod is accessible..."
             POD_NAME=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }} -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
             if [ -n "$POD_NAME" ]; then
               echo "Testing pod connectivity..."
@@ -98,7 +127,7 @@ jobs:
       - name: Rollback on Failure
         if: failure()
         run: |
-          echo " Deployment failed, initiating rollback..."
+          echo "Deployment failed, initiating rollback..."
           kubectl rollout undo deployment/${{ env.DEPLOYMENT_NAME }} \
             -n ${{ env.NAMESPACE }} \
             || echo "Rollback attempted"
@@ -109,6 +138,6 @@ jobs:
       - name: Deployment Summary
         if: success()
         run: |
-          echo " Deployment successful!"
-          echo " Deployment Details:"
+          echo "Deployment successful!"
+          echo "Deployment Details:"
           kubectl describe deployment ${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} | tail -20
