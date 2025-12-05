@@ -14,9 +14,9 @@
 
   pre_tasks:
     #################################################################
-    # System packages / tools (idempotent)
+    # Base packages (idempotent: re-running is safe)
     #################################################################
-    - name: Install base packages
+    - name: Ensure base packages are present
       become: true
       ansible.builtin.apt:
         update_cache: yes
@@ -29,11 +29,21 @@
           - lsb-release
           - software-properties-common
 
-    - name: Install Docker
+    #################################################################
+    # Docker – only install if missing
+    #################################################################
+    - name: Check if Docker is installed
+      ansible.builtin.command: docker --version
+      register: docker_check
+      failed_when: false
+      changed_when: false
+
+    - name: Install Docker if missing
       become: true
       ansible.builtin.apt:
         name: docker.io
         state: present
+      when: docker_check.rc != 0
 
     - name: Ensure Docker service is running
       become: true
@@ -43,37 +53,31 @@
         state: started
 
     #################################################################
-    # kubectl
+    # kubectl – check first, install binary only if missing
     #################################################################
-    - name: Add Kubernetes APT repo key
-      become: true
-      ansible.builtin.apt_key:
-        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-        state: present
+    - name: Check if kubectl is installed
+      ansible.builtin.command: kubectl version --client=true --output=yaml
+      register: kubectl_check
+      failed_when: false
+      changed_when: false
 
-    - name: Add Kubernetes APT repository
+    - name: Download kubectl binary if missing
       become: true
-      ansible.builtin.apt_repository:
-        repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
-        state: present
-        filename: kubernetes
-
-    - name: Install kubectl
-      become: true
-      ansible.builtin.apt:
-        name: kubectl
-        state: present
-        update_cache: yes
+      ansible.builtin.get_url:
+        url: "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        dest: /usr/local/bin/kubectl
+        mode: "0755"
+      when: kubectl_check.rc != 0
 
     #################################################################
-    # Minikube install (if not already present)
+    # Minikube – check + install if missing
     #################################################################
-    - name: Check if minikube is already installed
+    - name: Check if Minikube is installed
       ansible.builtin.stat:
         path: /usr/bin/minikube
       register: minikube_stat
 
-    - name: Download Minikube .deb
+    - name: Download Minikube .deb if missing
       become: true
       ansible.builtin.get_url:
         url: "{{ minikube_deb_url }}"
@@ -81,7 +85,7 @@
         mode: "0644"
       when: not minikube_stat.stat.exists
 
-    - name: Install Minikube
+    - name: Install Minikube if missing
       become: true
       ansible.builtin.apt:
         deb: "{{ minikube_deb_path }}"
@@ -90,7 +94,7 @@
     #################################################################
     # Ensure Minikube cluster is running
     #################################################################
-    - name: Check Minikube status
+    - name: Check Minikube status (host)
       ansible.builtin.command: minikube status --format='{{.Host}}'
       register: minikube_status
       failed_when: false
@@ -103,7 +107,7 @@
 
   tasks:
     #################################################################
-    # Kubernetes objects: Deployment + Service
+    # Kubernetes Deployment + Service
     #################################################################
     - name: Apply weather-ml-app Deployment
       kubernetes.core.k8s:
