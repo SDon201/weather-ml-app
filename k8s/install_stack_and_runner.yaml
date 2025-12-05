@@ -1,0 +1,144 @@
+---
+- name: Install Docker, Kubernetes tools, Ansible, and GitHub Actions runner
+  hosts: localhost
+  become: true
+  gather_facts: true
+
+  vars:
+    user_name: "{{ ansible_user | default('ubuntu') }}"
+    minikube_deb_url: "https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb"
+    minikube_deb_path: "/tmp/minikube_latest_amd64.deb"
+
+    runner_root: "/home/{{ user_name }}/actions-runner"
+    runner_version: "2.329.0"
+    runner_tar: "actions-runner-linux-x64-2.329.0.tar.gz"
+    runner_url: "https://github.com/actions/runner/releases/download/v2.329.0/actions-runner-linux-x64-2.329.0.tar.gz"
+    runner_checksum: "sha256:194f1e1e4bd02f80b7e9633fc546084d8d4e19f3928a324d512ea53430102e1d"
+
+    github_repo_url: "https://github.com/SDon201/weather-ml-app"
+    github_runner_token: ""
+
+  tasks:
+    - name: Fail if no GitHub runner token provided
+      ansible.builtin.fail:
+        msg: "Pass github_runner_token=YOURTOKEN via --extra-vars."
+      when: github_runner_token | length == 0
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install base tools
+      ansible.builtin.apt:
+        name:
+          - git
+          - python3
+          - python3-pip
+          - curl
+          - apt-transport-https
+          - ca-certificates
+          - gnupg
+          - software-properties-common
+        state: present
+
+    - name: Install Docker
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+
+    - name: Enable and start Docker
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ user_name }}"
+        groups: docker
+        append: true
+      ignore_errors: true
+
+    - name: Add Kubernetes apt repo key
+      ansible.builtin.apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Add Kubernetes apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
+        state: present
+
+    - name: Install kubectl
+      ansible.builtin.apt:
+        name: kubectl
+        state: present
+        update_cache: yes
+
+    - name: Download minikube deb
+      ansible.builtin.get_url:
+        url: "{{ minikube_deb_url }}"
+        dest: "{{ minikube_deb_path }}"
+        mode: "0644"
+
+    - name: Install minikube
+      ansible.builtin.apt:
+        deb: "{{ minikube_deb_path }}"
+
+    - name: Install Ansible
+      ansible.builtin.apt:
+        name: ansible
+        state: present
+
+    - name: Install kubernetes.core collection
+      ansible.builtin.command: ansible-galaxy collection install kubernetes.core
+      args:
+        creates: /root/.ansible/collections/ansible_collections/kubernetes/core
+
+    - name: Create actions-runner directory
+      ansible.builtin.file:
+        path: "{{ runner_root }}"
+        state: directory
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: "0755"
+
+    - name: Download GitHub Actions runner
+      ansible.builtin.get_url:
+        url: "{{ runner_url }}"
+        dest: "{{ runner_root }}/{{ runner_tar }}"
+        checksum: "{{ runner_checksum }}"
+        mode: "0644"
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    - name: Extract GitHub runner
+      ansible.builtin.unarchive:
+        src: "{{ runner_root }}/{{ runner_tar }}"
+        dest: "{{ runner_root }}"
+        remote_src: true
+        creates: "{{ runner_root }}/config.sh"
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    - name: Configure GitHub Actions runner
+      ansible.builtin.command: >
+        ./config.sh
+        --unattended
+        --replace
+        --url {{ github_repo_url }}
+        --token {{ github_runner_token }}
+      args:
+        chdir: "{{ runner_root }}"
+      environment:
+        RUNNER_ALLOW_RUNASROOT: "1"
+
+    - name: Install runner as service
+      ansible.builtin.command: ./svc.sh install
+      args:
+        chdir: "{{ runner_root }}"
+
+    - name: Start runner service
+      ansible.builtin.command: ./svc.sh start
+      args:
+        chdir: "{{ runner_root }}"
