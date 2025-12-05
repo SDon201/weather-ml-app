@@ -49,14 +49,14 @@ jobs:
 
       - name: Deploy to Kubernetes
         run: |
-          DOCKER_IMAGE="${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:v1"
+          DOCKER_IMAGE="${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:v2"
           echo "Deploying image: $DOCKER_IMAGE"
           kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} \
             ${{ env.IMAGE_NAME }}=$DOCKER_IMAGE \
             -n ${{ env.NAMESPACE }} \
             --record || echo "Deployment update initiated"
 
-      # Force the server to update pods even if tag stays :v1
+      # Force the server to update pods even if tag stays :v2
       - name: Force rollout restart
         run: |
           echo "Forcing rollout restart of deployment/${{ env.DEPLOYMENT_NAME }}..."
