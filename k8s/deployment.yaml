@@ -16,11 +16,11 @@
             replicas: 2
             selector:
               matchLabels:
-                app: weather-ml-app
+                app: weather-ml
             template:
               metadata:
-                labels: weather-ml-app
-                  app: weather-ml-app
+                labels:
+                  app: weather-ml
               spec:
                 containers:
                 - name: weather-ml
