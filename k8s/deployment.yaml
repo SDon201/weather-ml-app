@@ -38,7 +38,7 @@
 
     - name: Ensure Kubernetes Python client is installed
       become: true
-      ansible.builtin.pip:
+      ansible.builtin.apt:
         name: python3-kubernetes
         state: present
 
