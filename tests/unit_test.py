@@ -3,7 +3,7 @@ from app import app, classify_weather, load_model
 import numpy as np
 
 class TestUnit(unittest.TestCase):
-	def setUp(self):
+def setUp(self):
 		app.testing = True
 		self.client = app.test_client()
 	
