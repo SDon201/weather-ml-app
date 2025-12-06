@@ -1,10 +1,8 @@
-
 ---
 - name: Expose app and scale it
-  hosts: local
+  hosts: localhost
 
   tasks:
-
     - name: Write service manifest
       copy:
         dest: /tmp/service.yml
@@ -16,7 +14,7 @@
           spec:
             type: NodePort
             selector:
-              app: weather-ml
+              app: weather-ml-app
             ports:
               - protocol: TCP
                 port: 5000
@@ -27,4 +25,4 @@
       command: kubectl apply -f /tmp/service.yml
 
     - name: Scale deployment to 3 replicas
-      command: kubectl scale deployment weather-ml-deployment --replicas=3
+      command: kubectl scale deployment weather-ml-app --replicas=3
