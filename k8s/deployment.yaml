@@ -65,6 +65,19 @@
         enabled: true
         state: started
 
+    - name: Ensure docker group exists
+      become: true
+      ansible.builtin.group:
+        name: docker
+        state: present
+
+    - name: Add current user to docker group
+      become: true
+      ansible.builtin.user:
+        name: "{{ ansible_user_id }}"
+        groups: docker
+        append: true
+
     #################################################################
     # kubectl – check first, install binary only if missing
     #################################################################
@@ -110,6 +123,7 @@
     # Ensure Minikube cluster is running
     #################################################################
     - name: Check Minikube status (host)
+      become: false
       ansible.builtin.command: minikube status
       register: minikube_status
       failed_when: false
@@ -117,7 +131,8 @@
 
     - name: Start Minikube if not running
       become: false
-      ansible.builtin.command: minikube start --driver=docker
+      ansible.builtin.command: >
+        sg docker -c "minikube start --driver=docker"
       when: "'Running' not in minikube_status.stdout"
 
   tasks:
