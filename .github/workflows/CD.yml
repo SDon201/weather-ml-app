@@ -48,13 +48,13 @@ jobs:
           ansible-playbook -i localhost, -c local k8s/deployment.yaml
 
       - name: Deploy to Kubernetes
-        run: |
-          DOCKER_IMAGE="${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:v2"
+        run: |-
+          DOCKER_IMAGE="${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
           echo "Deploying image: $DOCKER_IMAGE"
           kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} \
-            ${{ env.IMAGE_NAME }}=$DOCKER_IMAGE \
-            -n ${{ env.NAMESPACE }} \
-            --record || echo "Deployment update initiated"
+          ${{ env.IMAGE_NAME }}=$DOCKER_IMAGE \
+          -n ${{ env.NAMESPACE }} \
+          --record
 
       # Force the server to update pods even if tag stays :v2
       - name: Force rollout restart
